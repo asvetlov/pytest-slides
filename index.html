@@ -358,11 +358,96 @@ def test_xxx():
 
 ```
 py.test --run-slow
-```              
+```
 <!-- .element: class="fragment" -->
             </script>
           </section>
+        </section>
 
+        <section>
+          <section>
+            <h2>Docker и тесты</h2>
+          </section>
+          <section data-background="docker.jpg" data-background-size="60%">
+          </section>
+
+          <section>
+            <h2>Fixture scope</h2>
+            <ul>
+              <li>function</li>
+              <li>class</li>
+              <li>module</li>
+              <li>session</li>
+            </ul>
+          </section>
+
+          <section data-markdown>>
+            <script type="text/template">
+## Уникальный ID и docker client
+```python
+import docker as libdocker
+import uuid
+
+@pytest.fixture(scope='session')
+def session_id():
+    return str(uuid.uuid4())
+
+
+@pytest.fixture(scope='session')
+def docker():
+    return libdocker.Client(version='auto')
+```
+            </script>
+        </section>
+        <section data-markdown>>
+          <script type="text/template">
+## Запуск контейнера
+```python
+@pytest.yield_fixture(scope='session')
+def redis_server(unused_port, session_id, docker):
+    docker.pull('redis')
+    port = unused_port()
+    container = docker.create_container(
+        image='redis',
+        name='test-redis-{}'.format(session_id),
+        ports=[6379],
+        detach=True,
+        host_config=docker.create_host_config(
+            port_bindings={6379: port}))
+            docker.start(container=container['Id'])
+            yield port
+            docker.kill(container=container['Id'])
+            docker.remove_container(container['Id'])
+            ```
+          </script>
+        </section>
+        <section data-markdown>>
+          <script type="text/template">
+## Создание клиента
+```python
+@pytest.fixture
+def redis_client(redis_server):
+    for i in range(100):
+    try:
+        client = redis.StrictRedis(host='127.0.0.1',
+                                   port=port, db=0)
+        client.get('some_key')
+        return client
+    except redis.ConnectionError:
+        time.sleep(0.01)
+```
+          </script>
+        </section>
+
+        <section data-markdown>>
+          <script type="text/template">
+## Тест
+```python
+def test_redis(redis_client):
+    redis_client.set(b'key', b'value')
+    assert redis_client.get(b'key') == b'value'
+```
+          </script>
         </section>
 
         <section>

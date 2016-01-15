@@ -29,8 +29,8 @@ def unused_port():
 
 @pytest.yield_fixture(scope='session')
 def redis_server(unused_port, session_id, docker):
-    port = unused_port()
     docker.pull('redis')
+    port = unused_port()
     container = docker.create_container(
         image='redis',
         name='test-redis-{}'.format(session_id),
