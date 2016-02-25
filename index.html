@@ -421,10 +421,10 @@ def redis_server(unused_port, session_id, docker):
         detach=True,
         host_config=docker.create_host_config(
             port_bindings={6379: port}))
-            docker.start(container=container['Id'])
-            yield port
-            docker.kill(container=container['Id'])
-            docker.remove_container(container['Id'])
+        docker.start(container=container['Id'])
+        yield port
+        docker.kill(container=container['Id'])
+        docker.remove_container(container['Id'])
             ```
           </script>
         </section>
